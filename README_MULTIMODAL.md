@@ -87,6 +87,10 @@ The pipeline demonstrates successful fusion of motion and text data, showing how
 
 The yield prediction model achieves high accuracy by leveraging both modalities, with feature importance analysis showing the relative contribution of motion and semantic features.
 
+## Waymo Dataset Usage
+
+This playbook was made using the Waymo Open Dataset, provided by Waymo LLC under the Waymo Dataset License Agreement for Non-Commercial Use, available at waymo.com/open/terms, and your access and use of such work are governed by the terms and conditions therein.
+
 ## Future Work
 
 - Implement more sophisticated fusion techniques (attention mechanisms, cross-modal transformers)

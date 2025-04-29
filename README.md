@@ -1,4 +1,4 @@
-# Waymo Multimodal Feature Engineering Pipeline
+# Multimodal Feature Engineering Pipeline
 
 This repository contains a comprehensive feature engineering pipeline for extracting, processing, and fusing features from the Waymo Motion and Reasoning datasets. The pipeline enables the creation of multimodal features that combine motion trajectory data with natural language annotations, supporting downstream tasks like yield prediction.
 
@@ -168,6 +168,10 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## License
 
 This repository is licensed under the MIT License - see the LICENSE file for details.
+
+## Waymo Dataset Usage
+
+This playbook was made using the Waymo Open Dataset, provided by Waymo LLC under the Waymo Dataset License Agreement for Non-Commercial Use, available at waymo.com/open/terms, and your access and use of such work are governed by the terms and conditions therein.
 
 ## Acknowledgments
 

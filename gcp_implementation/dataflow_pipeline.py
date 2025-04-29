@@ -1,5 +1,5 @@
 """
-Dataflow Pipeline for Waymo Multimodal Feature Processing
+Dataflow Pipeline for Multimodal Feature Processing
 
 This module implements a distributed Apache Beam pipeline for processing
 Waymo Motion and Reasoning datasets at scale using Google Cloud Dataflow.
@@ -557,7 +557,7 @@ def run(argv=None):
 
 def main():
     """Main entry point."""
-    parser = argparse.ArgumentParser(description='Waymo Multimodal Feature Pipeline')
+    parser = argparse.ArgumentParser(description='Multimodal Feature Pipeline')
     
     # Parse known args to check if help is needed
     known_args, pipeline_args = parser.parse_known_args()

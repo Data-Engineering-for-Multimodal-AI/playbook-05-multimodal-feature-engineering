@@ -58,3 +58,7 @@ Contains outputs from the multimodal feature pipeline:
 ## Note
 
 Some large output files (like CSVs with features for many scenarios) may be excluded from version control via .gitignore. These files will be generated when you run the pipeline scripts. 
+
+## Waymo Dataset Usage
+
+This playbook was made using the Waymo Open Dataset, provided by Waymo LLC under the Waymo Dataset License Agreement for Non-Commercial Use, available at waymo.com/open/terms, and your access and use of such work are governed by the terms and conditions therein. 

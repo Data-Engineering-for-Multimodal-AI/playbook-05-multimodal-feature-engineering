@@ -42,3 +42,7 @@ The feature extraction tools generate several outputs:
 - Comprehensive validation reports with statistics and visualizations
 
 All outputs are saved to the `outputs/validation_analysis/` and `outputs/features/` directories. 
+
+## Waymo Dataset Usage
+
+This playbook was made using the Waymo Open Dataset, provided by Waymo LLC under the Waymo Dataset License Agreement for Non-Commercial Use, available at waymo.com/open/terms, and your access and use of such work are governed by the terms and conditions therein. 

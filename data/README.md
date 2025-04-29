@@ -44,3 +44,7 @@ data/
 ## Data Processing
 
 Once you have the data in place, you can run the scripts in the `data_inspection` directory to explore and understand the datasets before proceeding with feature extraction and multimodal processing. 
+
+## Waymo Dataset Usage
+
+This playbook was made using the Waymo Open Dataset, provided by Waymo LLC under the Waymo Dataset License Agreement for Non-Commercial Use, available at waymo.com/open/terms, and your access and use of such work are governed by the terms and conditions therein. 

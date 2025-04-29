@@ -148,6 +148,10 @@ Common issues and solutions:
 
 For additional support, consult the GCP documentation for the respective services.
 
+## Waymo Dataset Usage
+
+This playbook was made using the Waymo Open Dataset, provided by Waymo LLC under the Waymo Dataset License Agreement for Non-Commercial Use, available at waymo.com/open/terms, and your access and use of such work are governed by the terms and conditions therein.
+
 ## References
 
 - [Apache Beam Programming Guide](https://beam.apache.org/documentation/programming-guide/)
