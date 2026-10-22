@@ -29,7 +29,7 @@ def load_common_scenario_ids():
     with open(scenario_id_file, 'r') as f:
         comparison = json.load(f)
     
-    common_ids = comparison.get('common_ids', [])
+    common_ids = sorted(comparison.get('common_ids', []))
     print(f"Loaded {len(common_ids)} common scenario IDs.")
     return common_ids
 

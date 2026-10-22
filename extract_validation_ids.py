@@ -136,9 +136,10 @@ def compare_scenario_ids(motion_ids, reasoning_ids):
     print(f"  Reasoning-only IDs: {len(reasoning_only_ids)}")
     
     return {
-        'common_ids': list(common_ids),
-        'motion_only_ids': list(motion_only_ids),
-        'reasoning_only_ids': list(reasoning_only_ids)
+        # Sorted so the file (and "the first N scenarios" downstream) is the same on every run
+        'common_ids': sorted(common_ids),
+        'motion_only_ids': sorted(motion_only_ids),
+        'reasoning_only_ids': sorted(reasoning_only_ids)
     }
 
 def create_agent_mapping(motion_agent_ids, reasoning_ego_ids):

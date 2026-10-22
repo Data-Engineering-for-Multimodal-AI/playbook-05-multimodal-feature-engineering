@@ -100,7 +100,8 @@ def check_scenario_id_overlap(motion_ids, reasoning_ids):
     motion_set = set(motion_ids)
     reasoning_set = set(reasoning_ids)
     
-    common_ids = motion_set.intersection(reasoning_set)
+    # Sorted so the output is the same on every run
+    common_ids = sorted(motion_set.intersection(reasoning_set))
     
     print(f"\nFound {len(common_ids)} overlapping scenario IDs out of {len(motion_ids)} motion IDs and {len(reasoning_ids)} reasoning IDs")
     
