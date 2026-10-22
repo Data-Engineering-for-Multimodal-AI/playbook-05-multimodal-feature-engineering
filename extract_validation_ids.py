@@ -57,8 +57,10 @@ def extract_motion_validation_ids(max_examples=None):
                 if 'state/id' in example.features.feature:
                     agent_id_feature = example.features.feature['state/id']
                     
-                    if agent_id_feature.int64_list.value:
-                        for agent_id in agent_id_feature.int64_list.value:
+                    # WOMD stores agent IDs as floats; -1 marks padding slots
+                    values = agent_id_feature.int64_list.value or agent_id_feature.float_list.value
+                    for agent_id in values:
+                        if agent_id >= 0:
                             file_agent_ids.append((scenario_id, int(agent_id)))
                 
             except Exception as e:
