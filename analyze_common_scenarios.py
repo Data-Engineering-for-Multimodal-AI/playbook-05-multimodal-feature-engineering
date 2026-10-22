@@ -299,7 +299,8 @@ def main():
     
     if not common_ids:
         print("No common scenario IDs found. Exiting.")
-        return
+        # Exit with an error so a script or CI run notices that nothing was analyzed
+        raise SystemExit(1)
     
     # Analyze common scenarios
     reasoning_data, detailed_analysis = analyze_common_scenarios(common_ids, max_scenarios=5)
