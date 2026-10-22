@@ -5,9 +5,12 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 
+# Folder with the Waymo data (see data/README.md). Set WAYMO_DATA_DIR to use another folder.
+DATA_DIR = os.environ.get('WAYMO_DATA_DIR', 'data')
+
 # Path definitions
-MOTION_DATA_PATH = 'data/motion/tf_example/training'
-REASONING_DATA_PATH = 'data/reasoning/training'
+MOTION_DATA_PATH = os.path.join(DATA_DIR, 'motion/tf_example/training')
+REASONING_DATA_PATH = os.path.join(DATA_DIR, 'reasoning/training')
 
 def inspect_motion_scenario_ids(max_scenarios=1000):
     """Inspect the scenario IDs in the Motion Dataset."""

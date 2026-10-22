@@ -15,9 +15,12 @@ import umap
 import seaborn as sns
 from typing import Dict, List, Tuple, Any, Optional, Union
 
+# Folder with the Waymo data (see data/README.md). Set WAYMO_DATA_DIR to use another folder.
+DATA_DIR = os.environ.get('WAYMO_DATA_DIR', 'data')
+
 # Path definitions
-MOTION_VALIDATION_PATH = 'data/motion/tf_example/validation_interactive'
-REASONING_VALIDATION_PATH = 'data/reasoning/validation_interactive'
+MOTION_VALIDATION_PATH = os.path.join(DATA_DIR, 'motion/tf_example/validation_interactive')
+REASONING_VALIDATION_PATH = os.path.join(DATA_DIR, 'reasoning/validation_interactive')
 OUTPUT_DIR = 'outputs/multimodal_features'
 FEATURE_STORE_DIR = 'outputs/feature_store'
 
