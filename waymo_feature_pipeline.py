@@ -10,7 +10,7 @@ from sentence_transformers import SentenceTransformer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GroupShuffleSplit
 import umap
 
 # Folder with the Waymo data (see data/README.md). Set WAYMO_DATA_DIR to use another folder.
@@ -97,47 +97,21 @@ def inspect_and_extract_features(raw_record):
     data['state/current/bbox_yaw'] = extract_feature('state/current/bbox_yaw', np.array([]))
     data['state/current/valid'] = extract_feature('state/current/valid', np.array([]))
     
-    # Extract past state (more complex structure)
-    if 'state/past/x' in features:
-        # For simplicity, we'll assume fixed dimensions for past/future states
-        # In a real application, you would need to reshape these arrays based on the actual dimensions
-        past_x = extract_feature('state/past/x')
-        
-        # Try to determine the shape of the past trajectory data
-        n_agents = len(data['state/id']) if len(data['state/id']) > 0 else 128
-        n_past_steps = 10  # Assumption based on your original feature description
-        
-        # Reshape if possible
-        try:
-            data['state/past/x'] = past_x.reshape(n_agents, n_past_steps)
-        except:
-            # If reshaping fails, keep as 1D array
-            data['state/past/x'] = past_x
-            
-        # Similar approach for other past features
-        data['state/past/y'] = extract_feature('state/past/y')
-        data['state/past/velocity_x'] = extract_feature('state/past/velocity_x')
-        data['state/past/velocity_y'] = extract_feature('state/past/velocity_y')
-        data['state/past/speed'] = extract_feature('state/past/speed')
-        data['state/past/valid'] = extract_feature('state/past/valid')
-    
-    # Extract future state
-    if 'state/future/x' in features:
-        # Similar approach for future features
-        n_future_steps = 80  # Assumption based on your original feature description
-        
-        future_x = extract_feature('state/future/x')
-        
-        try:
-            data['state/future/x'] = future_x.reshape(n_agents, n_future_steps)
-        except:
-            data['state/future/x'] = future_x
-            
-        data['state/future/y'] = extract_feature('state/future/y')
-        data['state/future/velocity_x'] = extract_feature('state/future/velocity_x')
-        data['state/future/velocity_y'] = extract_feature('state/future/velocity_y')
-        data['state/future/speed'] = extract_feature('state/future/speed')
-        data['state/future/valid'] = extract_feature('state/future/valid')
+    # Extract past and future states. Each is a flat list in agent-major order, i.e.
+    # shape [num_agents, steps]: 10 past steps and 80 future steps per agent.
+    # Every array (including valid) must be reshaped, or the per-agent lookups below fail.
+    n_agents = len(data['state/id']) if len(data['state/id']) > 0 else 128
+    for period, n_steps in (('past', 10), ('future', 80)):
+        for name in ('x', 'y', 'velocity_x', 'velocity_y', 'speed', 'valid'):
+            key = f'state/{period}/{name}'
+            if key not in features:
+                continue
+            values = extract_feature(key)
+            try:
+                data[key] = values.reshape(n_agents, n_steps)
+            except (AttributeError, ValueError):
+                print(f"Warning: unexpected shape for {key} in scenario {scenario_id}")
+                data[key] = values
     
     return data
 
@@ -420,9 +394,9 @@ def extract_motion_features(scenarios):
                             future_y = np.array([current_y + j*0.1 for j in range(5)])
                             future_speed = np.array([max(0, current_speed - j*0.5) for j in range(5)])
                     
-                    # If no future speed data available, create synthetic data
+                    # Skip agents with no valid future steps: there is nothing to label
                     if len(future_speed) == 0:
-                        future_speed = np.array([max(0, current_speed - j*0.5) for j in range(5)])
+                        continue
                     
                     # Compute timestamps (assuming 10Hz for both past and future)
                     current_timestamp = 0.0
@@ -442,7 +416,13 @@ def extract_motion_features(scenarios):
                     if len(past_speed) == 0 and len(past_vel_x) > 0:
                         past_speed = np.sqrt(past_vel_x**2 + past_vel_y**2)
                     
-                    # Combine past, current, and future for complete trajectory if available
+                    # Derived features use only the past and current state. The future
+                    # trajectory is used for the yield label alone; using it for features
+                    # too would leak the answer into the model inputs.
+                    future_x = np.array([])
+                    future_vel_x, future_vel_y = np.array([]), np.array([])
+                    
+                    # Combine past and current for the trajectory
                     all_x = [current_x]
                     all_y = [current_y]
                     all_vel_x = [current_vel_x]
@@ -565,16 +545,18 @@ def load_and_embed_reasoning_data(common_ids=None):
                 
             processed_files += 1
             
-            # Extract QA pairs (focus on ego and interactions)
+            # Extract QA pairs that describe the current moment (ego status and map).
+            # The interaction Q&As (int_q/int_a) describe what agents will do next,
+            # which is what the yield label measures, so they are not embedded.
             qa_texts = []
             
             # Add ego QA
             for q, a in zip(data['ego_q'][:2], data['ego_a'][:2]):
                 qa_texts.append(f"Q: {q} A: {a}")
                 
-            # Add interaction QA (if available)
-            if 'int_q' in data and 'int_a' in data:
-                for q, a in zip(data['int_q'][:2], data['int_a'][:2]):
+            # Add map environment QA (if available)
+            if 'env_q' in data and 'env_a' in data:
+                for q, a in zip(data['env_q'][:2], data['env_a'][:2]):
                     qa_texts.append(f"Q: {q} A: {a}")
             
             # Combine texts and create embedding
@@ -794,8 +776,16 @@ def train_yield_prediction_model(fused_df):
     class_counts = y.value_counts()
     print(f"\nClass distribution - Yielding: {class_counts.get(1, 0)}, Non-yielding: {class_counts.get(0, 0)}")
     
-    # Split data
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
+    # Split data by scenario, so no scenario (and its shared text embedding) is in both sets
+    if fused_df['scenario_id'].nunique() < 2 or y.nunique() < 2:
+        print("Cannot train model: need at least 2 scenarios and both classes")
+        return
+    splitter = GroupShuffleSplit(n_splits=1, test_size=0.25, random_state=42)
+    train_idx, test_idx = next(splitter.split(X, y, fused_df['scenario_id']))
+    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+    majority_class = y_train.mode()[0]
+    print(f"Majority-class baseline accuracy on the test set: {(y_test == majority_class).mean():.3f}")
     
     # Scale features
     scaler = StandardScaler()
