@@ -1,8 +1,9 @@
 from setuptools import setup, find_packages
 
 # Read requirements
+# (skips the comment header that uv export writes)
 with open('requirements.txt') as f:
-    requirements = f.read().splitlines()
+    requirements = [line for line in f.read().splitlines() if line.strip() and not line.startswith('#')]
 
 setup(
     name="waymo-multimodal-pipeline",
@@ -10,7 +11,7 @@ setup(
     description="Multimodal feature engineering pipeline for Waymo Motion and Reasoning datasets",
     author="Data Engineering for Multimodal AI",
     author_email="",
-    url="https://github.com/Data-Engineering-for-Multimodal-AI/pb5-mm-feature-engineering-pipeline",
+    url="https://github.com/Data-Engineering-for-Multimodal-AI/playbook-05-multimodal-feature-engineering",
     packages=find_packages(),
     install_requires=requirements,
     classifiers=[
@@ -19,9 +20,9 @@ setup(
         "Intended Audience :: Science/Research",
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
     ],
-    python_requires=">=3.8",
+    python_requires=">=3.12",
 ) 
