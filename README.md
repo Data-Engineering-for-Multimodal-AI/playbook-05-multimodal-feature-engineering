@@ -43,14 +43,10 @@ python validation_data_analysis.py
 python extract_validation_ids.py          # new: analyze_common_scenarios.py needs its output
 python analyze_common_scenarios.py
 python combined_feature_pipeline.py
-python multimodal_feature_pipeline.py     # 10 scenarios, as printed
+python multimodal_feature_pipeline.py     # now uses every matched scenario (see below)
 ```
 
-The printed default of 10 scenarios gives too few yielding agents for a meaningful test set. To train and evaluate on every matched scenario (776 with the default download, about 4 minutes on a laptop CPU):
-
-```bash
-python multimodal_feature_pipeline.py --max-scenarios 0
-```
+`multimodal_feature_pipeline.py` now processes every scenario found in both datasets by default: 776 with the default download, about 4–5 minutes on a laptop CPU. The first edition processed 10, which leaves too few yielding agents to test on. For a quick run like the first edition's, use `--max-scenarios 10`.
 
 Using [uv](https://docs.astral.sh/uv/) instead: `uv sync`, then prefix each command with `uv run`, e.g. `uv run python multimodal_feature_pipeline.py`.
 
@@ -81,7 +77,7 @@ Page references are to be confirmed against the printed book.
 | Data in the repository | 126,357 WOMD-Reasoning files committed | Downloaded by each reader with `scripts/fetch_data.sh` | Waymo's terms allow sharing only with registered users |
 | Run order | `analyze_common_scenarios.py` straight after `validation_data_analysis.py` | Run `extract_validation_ids.py` first | `analyze_common_scenarios.py` reads its output |
 | Install | Python 3.8+, unpinned, no `seaborn` | Python 3.12+, pinned from `uv.lock`; on Linux, PyTorch comes from the CPU-only index (`requirements.txt` adds it) | `seaborn` is imported; old pins don't install on 3.12+. PyPI's Linux PyTorch build includes Triton, which crashed the scripts when loaded after TensorFlow (seen in CI), and adds several GB of CUDA libraries |
-| Scenario selection | "First 10" common scenarios in set order (changed between runs) | Sorted order; `--max-scenarios` | Reproducible runs |
+| Scenario selection | 10 common scenarios by default, in set order (changed between runs) | All common scenarios by default, sorted; `--max-scenarios N` for fewer | With 10 scenarios the test set has no yielding agents; sorted order makes runs reproducible |
 | Subfolder scripts | Copies of the root scripts | Wrappers that run the root scripts | One copy to maintain; both paths work |
 
 The full list is in [CHANGELOG.md](CHANGELOG.md).
@@ -120,7 +116,7 @@ Found 11317 unique scenario IDs in Reasoning validation dataset
   total_questions: 512459
 ```
 
-`python multimodal_feature_pipeline.py` (10 scenarios as printed, 37 s). Only 4 agents yield, and none of them are in the test scenarios, so the scores are meaningless; the script says so:
+`python multimodal_feature_pipeline.py --max-scenarios 10` (the first edition's default, 33 s). Only 4 agents yield, and none of them are in the test scenarios, so the scores are meaningless; the script says so:
 
 ```
 Processed 10 scenarios, 10 successful.
@@ -132,10 +128,10 @@ Using 191 agents from 10 scenarios for yield prediction model.
 Yielding agents: 4 (2.1%)
 Adding 768 text embedding dimensions to model features.
 Train: 141 agents from 7 scenarios. Test: 50 agents from 3 scenarios.
-WARNING: the test scenarios contain only one class, so the scores below don't measure anything. Process more scenarios, e.g. --max-scenarios 0 for all of them.
+WARNING: the test scenarios contain only one class, so the scores below don't measure anything. Process more scenarios (the default, --max-scenarios 0, uses all of them).
 ```
 
-`python multimodal_feature_pipeline.py --max-scenarios 0` (all 776 matched scenarios, 214 s):
+`python multimodal_feature_pipeline.py` (default: all 776 matched scenarios, 263 s):
 
 ```
 Processed 776 scenarios, 776 successful.

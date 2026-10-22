@@ -20,7 +20,7 @@ The printed version is tagged `first-edition`. That tag points to the printed co
 
 ### Changed
 - The data folder can be set with `WAYMO_DATA_DIR` (default `data`, as before).
-- `multimodal_feature_pipeline.py` takes `--max-scenarios` (default 10 as printed; `0` processes all scenarios found in both datasets).
+- `multimodal_feature_pipeline.py` processes every scenario found in both datasets by default (the first edition used 10, which leaves no yielding agents in the test set). `--max-scenarios N` processes fewer.
 - The scripts in `data_inspection/`, `feature_extraction/` and `multimodal_pipeline/` were identical copies of the root scripts. They are now wrappers that run the root copy, so both paths still work.
 - `README_MULTIMODAL.md` and `COMPLETION_SUMMARY.md` are merged into `README.md`. Their claims of "high accuracy" are replaced by measured results.
 - `gcp_implementation/` is labeled as an untested sketch. It uses the Vertex AI Feature Store (Legacy) API, which Google deprecated on February 17, 2026.

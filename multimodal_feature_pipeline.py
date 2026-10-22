@@ -733,7 +733,7 @@ class MultimodalFeaturePipeline:
             return None
         if y_test.nunique() < 2:
             print("WARNING: the test scenarios contain only one class, so the scores below don't measure "
-                  "anything. Process more scenarios, e.g. --max-scenarios 0 for all of them.")
+                  "anything. Process more scenarios (the default, --max-scenarios 0, uses all of them).")
         
         def fit(cols):
             # Scale features, then train a logistic regression model
@@ -873,7 +873,7 @@ class MultimodalFeaturePipeline:
         except Exception as e:
             print(f"Error creating text embedding visualization: {str(e)}")
 
-def main(max_scenarios=10):
+def main(max_scenarios=None):
     """Main function to run the multimodal feature pipeline."""
     print("Starting Multimodal Feature Pipeline")
     
@@ -895,8 +895,10 @@ def main(max_scenarios=10):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description=__doc__)
-    # Process 10 scenarios by default; 0 processes every scenario found in both datasets
-    parser.add_argument("--max-scenarios", "--max_scenarios", type=int, default=10)
+    # Every scenario found in both datasets by default (the first edition used 10, which
+    # leaves too few yielding agents to test on). Use e.g. --max-scenarios 10 for a quick run.
+    parser.add_argument("--max-scenarios", "--max_scenarios", type=int, default=0,
+                        help="number of scenarios to process; 0 (default) means all")
     # Accepted for the command in multimodal_pipeline/README.md; the model is always trained
     parser.add_argument("--train_yield_model", "--train-yield-model", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
