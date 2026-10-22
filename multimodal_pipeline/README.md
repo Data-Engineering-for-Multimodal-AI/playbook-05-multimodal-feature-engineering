@@ -36,9 +36,9 @@ python multimodal_feature_pipeline.py --train_yield_model
 ## Input Requirements
 
 These pipelines expect:
-- Motion dataset in TFRecord format
-- Reasoning dataset in TFRecord format
-- Common scenarios between the datasets (identified by analyze_common_scenarios.py)
+- Motion dataset: TFRecord files of tf.Example protos (see `data/README.md`)
+- Reasoning dataset: one JSON file per scenario (WOMD-Reasoning)
+- Common scenarios between the datasets (identified by extract_validation_ids.py; the pipelines also find them if that file is missing)
 
 ## Outputs
 
