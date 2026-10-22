@@ -12,6 +12,7 @@ dependencies = [
     "scikit-learn>=1.5",
     "seaborn>=0.13",               # multimodal_feature_pipeline.py
     "sentence-transformers>=3.0",
+    "torch>=2.4",                  # via sentence-transformers; CPU build on Linux (see [tool.uv.sources])
     "tensorflow>=2.20",            # reads the WOMD tf.Example TFRecords; 2.20+ supports Python 3.13
     "tqdm>=4.66",
     "umap-learn>=0.5.6",
@@ -24,6 +25,17 @@ dev = [
 
 [tool.uv]
 package = false
+
+# On Linux, PyPI's torch is the CUDA build, which also installs Triton. Loading Triton
+# after TensorFlow crashes the process (segfault), and the CUDA libraries add several GB.
+# This playbook runs on CPU, so Linux gets the CPU build. macOS and Windows use PyPI.
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

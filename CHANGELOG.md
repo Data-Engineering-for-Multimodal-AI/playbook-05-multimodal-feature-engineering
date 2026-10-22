@@ -11,6 +11,7 @@ The printed version is tagged `first-edition`. That tag points to the printed co
 - **Honest evaluation**: the model is compared with a majority-class baseline and a motion-only model, using accuracy, balanced accuracy and F1. See "Expected output" in the README.
 - `waymo_feature_pipeline.py`: only `future/x` was reshaped per agent, so reading the other trajectory arrays failed and the error handlers silently replaced real trajectories with made-up ones. All past and future arrays are now reshaped. Its speed and heading features use past and current state only, its text embedding uses ego and map Q&As instead of interaction Q&As, and it splits by scenario.
 - `seaborn` was imported but missing from `requirements.txt`.
+- On Linux, PyTorch now comes from the CPU-only index. PyPI's Linux build includes Triton, which crashed `waymo_feature_pipeline.py` and `multimodal_feature_pipeline.py` (segfault) when loaded after TensorFlow, and pulls several GB of CUDA libraries.
 - `analyze_common_scenarios.py` exits with an error when there is nothing to analyze (it exited 0).
 - `combined_feature_pipeline.py --max_scenarios 50` (printed in `multimodal_pipeline/README.md`) was ignored; it now works.
 - Scenario lists are sorted, so "the first 10 scenarios" is the same on every run.

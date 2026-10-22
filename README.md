@@ -80,7 +80,7 @@ Page references are to be confirmed against the printed book.
 | `waymo_feature_pipeline.py` | Trajectories replaced by made-up values when an array lookup failed (it always did) | All trajectory arrays read per agent; features from past and current only; scenario split | Its labels and statistics came from the made-up values |
 | Data in the repository | 126,357 WOMD-Reasoning files committed | Downloaded by each reader with `scripts/fetch_data.sh` | Waymo's terms allow sharing only with registered users |
 | Run order | `analyze_common_scenarios.py` straight after `validation_data_analysis.py` | Run `extract_validation_ids.py` first | `analyze_common_scenarios.py` reads its output |
-| Install | Python 3.8+, unpinned, no `seaborn` | Python 3.12+, pinned from `uv.lock` | `seaborn` is imported; old pins don't install on 3.12+ |
+| Install | Python 3.8+, unpinned, no `seaborn` | Python 3.12+, pinned from `uv.lock`; on Linux, PyTorch comes from the CPU-only index (`requirements.txt` adds it) | `seaborn` is imported; old pins don't install on 3.12+. PyPI's Linux PyTorch build includes Triton, which crashed the scripts when loaded after TensorFlow (seen in CI), and adds several GB of CUDA libraries |
 | Scenario selection | "First 10" common scenarios in set order (changed between runs) | Sorted order; `--max-scenarios` | Reproducible runs |
 | Subfolder scripts | Copies of the root scripts | Wrappers that run the root scripts | One copy to maintain; both paths work |
 
