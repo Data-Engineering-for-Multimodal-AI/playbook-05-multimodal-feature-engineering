@@ -9,6 +9,8 @@ This directory contains the core pipelines for extracting and fusing multimodal 
 
 ## Usage
 
+The scripts listed here live in the repository root. The `.py` files in this folder are thin wrappers that run the root copy, so you can run either path from the repository root.
+
 ```bash
 # Run the combined feature pipeline (for common scenarios)
 python combined_feature_pipeline.py
