@@ -47,7 +47,7 @@ class MotionReasoningPipeline:
             try:
                 with open(comparison_file, 'r') as f:
                     comparison = json.load(f)
-                common_ids = comparison.get('common_ids', [])
+                common_ids = sorted(comparison.get('common_ids', []))
                 print(f"Loaded {len(common_ids)} common scenario IDs.")
                 return common_ids
             except Exception as e:
@@ -58,7 +58,7 @@ class MotionReasoningPipeline:
         motion_ids = self.extract_motion_scenario_ids()
         reasoning_ids = self.extract_reasoning_scenario_ids()
         
-        common_ids = list(set(motion_ids).intersection(set(reasoning_ids)))
+        common_ids = sorted(set(motion_ids).intersection(set(reasoning_ids)))
         print(f"Found {len(common_ids)} common scenario IDs.")
         
         # Save to file for later use
@@ -504,5 +504,9 @@ def main(max_scenarios=10):
     print("Pipeline complete!")
 
 if __name__ == "__main__":
-    # Process 10 scenarios by default, change this to process more
-    main(max_scenarios=10)
+    import argparse
+    parser = argparse.ArgumentParser()
+    # Process 10 scenarios by default; 0 processes every scenario found in both datasets
+    parser.add_argument("--max-scenarios", "--max_scenarios", type=int, default=10)
+    args = parser.parse_args()
+    main(max_scenarios=args.max_scenarios or None)
