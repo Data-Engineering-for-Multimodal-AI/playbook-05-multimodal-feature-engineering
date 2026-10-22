@@ -3,10 +3,9 @@ Smoke test: run every script, in README order, on a small synthetic dataset.
 
 The Waymo data can't be shared, so tests/make_fixture.py writes data in the same
 formats. CPU only, no Waymo account. The scripts run in a temporary folder, so
-nothing is written to outputs/. The Sentence-BERT model is not downloaded
-(HF_HUB_OFFLINE=1): the pipelines fall back to running without text embeddings,
-and test_text_embedding_inputs covers the embedding inputs.
-Run with `make smoke`.
+nothing is written to outputs/. The first run downloads the public Sentence-BERT
+models (all-mpnet-base-v2, paraphrase-MiniLM-L6-v2) from Hugging Face; later runs
+use the local cache. Run with `make smoke`.
 """
 
 import json
@@ -41,8 +40,7 @@ README_ORDER = [
 def run_dir(tmp_path_factory):
     data = write_fixture(str(tmp_path_factory.mktemp("data")), scenarios=12, seed=0)
     work = tmp_path_factory.mktemp("work")
-    env = {**os.environ, "WAYMO_DATA_DIR": data, "HF_HUB_OFFLINE": "1",
-           "TF_CPP_MIN_LOG_LEVEL": "2", "MPLBACKEND": "Agg"}
+    env = {**os.environ, "WAYMO_DATA_DIR": data, "TF_CPP_MIN_LOG_LEVEL": "2", "MPLBACKEND": "Agg"}
     logs = {}
     for script in README_ORDER:
         result = subprocess.run([sys.executable, str(ROOT / script)], cwd=work, env=env,

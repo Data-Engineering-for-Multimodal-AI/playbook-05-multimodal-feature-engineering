@@ -54,7 +54,7 @@ python multimodal_feature_pipeline.py --max-scenarios 0
 
 Using [uv](https://docs.astral.sh/uv/) instead: `uv sync`, then prefix each command with `uv run`, e.g. `uv run python multimodal_feature_pipeline.py`.
 
-Run the end-to-end check, which uses synthetic data in the Waymo formats and needs no Waymo account: `make smoke`
+Run the end-to-end check, which uses synthetic data in the Waymo formats and needs no Waymo account: `make smoke` (the first run downloads the public Sentence-BERT models, about 0.5 GB)
 
 The subfolder paths from the book (`python multimodal_pipeline/multimodal_feature_pipeline.py` and so on) still work. They run the root scripts.
 

@@ -17,6 +17,11 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v10.3.0
+      - name: Cache Sentence-BERT models
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/huggingface
+          key: hf-models-all-mpnet-base-v2-paraphrase-MiniLM-L6-v2
       - name: Smoke test (synthetic data in the Waymo formats)
         run: make smoke
       - name: Free disk space for the second install
