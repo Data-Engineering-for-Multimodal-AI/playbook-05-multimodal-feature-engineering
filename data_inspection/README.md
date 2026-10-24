@@ -10,6 +10,8 @@ This directory contains utilities for inspecting and analyzing the Waymo Motion 
 
 ## Usage
 
+The scripts listed here live in the repository root. The `.py` files in this folder are thin wrappers that run the root copy, so you can run either path from the repository root.
+
 ```bash
 # Basic dataset inspection
 python inspect_waymo_data.py

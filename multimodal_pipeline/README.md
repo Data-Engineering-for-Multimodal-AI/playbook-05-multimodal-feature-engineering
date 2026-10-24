@@ -9,6 +9,8 @@ This directory contains the core pipelines for extracting and fusing multimodal 
 
 ## Usage
 
+The scripts listed here live in the repository root. The `.py` files in this folder are thin wrappers that run the root copy, so you can run either path from the repository root.
+
 ```bash
 # Run the combined feature pipeline (for common scenarios)
 python combined_feature_pipeline.py
@@ -34,9 +36,9 @@ python multimodal_feature_pipeline.py --train_yield_model
 ## Input Requirements
 
 These pipelines expect:
-- Motion dataset in TFRecord format
-- Reasoning dataset in TFRecord format
-- Common scenarios between the datasets (identified by analyze_common_scenarios.py)
+- Motion dataset: TFRecord files of tf.Example protos (see `data/README.md`)
+- Reasoning dataset: one JSON file per scenario (WOMD-Reasoning)
+- Common scenarios between the datasets (identified by extract_validation_ids.py; the pipelines also find them if that file is missing)
 
 ## Outputs
 

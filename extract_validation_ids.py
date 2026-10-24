@@ -5,9 +5,12 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 
+# Folder with the Waymo data (see data/README.md). Set WAYMO_DATA_DIR to use another folder.
+DATA_DIR = os.environ.get('WAYMO_DATA_DIR', 'data')
+
 # Path definitions
-MOTION_VALIDATION_PATH = 'data/motion/tf_example/validation_interactive'
-REASONING_VALIDATION_PATH = 'data/reasoning/validation_interactive'
+MOTION_VALIDATION_PATH = os.path.join(DATA_DIR, 'motion/tf_example/validation_interactive')
+REASONING_VALIDATION_PATH = os.path.join(DATA_DIR, 'reasoning/validation_interactive')
 OUTPUT_DIR = 'outputs/validation_analysis'
 
 # Create output directory if it doesn't exist
@@ -54,8 +57,10 @@ def extract_motion_validation_ids(max_examples=None):
                 if 'state/id' in example.features.feature:
                     agent_id_feature = example.features.feature['state/id']
                     
-                    if agent_id_feature.int64_list.value:
-                        for agent_id in agent_id_feature.int64_list.value:
+                    # WOMD stores agent IDs as floats; -1 marks padding slots
+                    values = agent_id_feature.int64_list.value or agent_id_feature.float_list.value
+                    for agent_id in values:
+                        if agent_id >= 0:
                             file_agent_ids.append((scenario_id, int(agent_id)))
                 
             except Exception as e:
@@ -133,9 +138,10 @@ def compare_scenario_ids(motion_ids, reasoning_ids):
     print(f"  Reasoning-only IDs: {len(reasoning_only_ids)}")
     
     return {
-        'common_ids': list(common_ids),
-        'motion_only_ids': list(motion_only_ids),
-        'reasoning_only_ids': list(reasoning_only_ids)
+        # Sorted so the file (and "the first N scenarios" downstream) is the same on every run
+        'common_ids': sorted(common_ids),
+        'motion_only_ids': sorted(motion_only_ids),
+        'reasoning_only_ids': sorted(reasoning_only_ids)
     }
 
 def create_agent_mapping(motion_agent_ids, reasoning_ego_ids):

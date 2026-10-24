@@ -7,9 +7,12 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from collections import defaultdict, Counter
 
+# Folder with the Waymo data (see data/README.md). Set WAYMO_DATA_DIR to use another folder.
+DATA_DIR = os.environ.get('WAYMO_DATA_DIR', 'data')
+
 # Path definitions
-MOTION_VALIDATION_PATH = 'data/motion/tf_example/validation_interactive'
-REASONING_VALIDATION_PATH = 'data/reasoning/validation_interactive'
+MOTION_VALIDATION_PATH = os.path.join(DATA_DIR, 'motion/tf_example/validation_interactive')
+REASONING_VALIDATION_PATH = os.path.join(DATA_DIR, 'reasoning/validation_interactive')
 OUTPUT_DIR = 'outputs/validation_analysis'
 
 # Create output directory if it doesn't exist
@@ -26,7 +29,7 @@ def load_common_scenario_ids():
     with open(scenario_id_file, 'r') as f:
         comparison = json.load(f)
     
-    common_ids = comparison.get('common_ids', [])
+    common_ids = sorted(comparison.get('common_ids', []))
     print(f"Loaded {len(common_ids)} common scenario IDs.")
     return common_ids
 
@@ -296,7 +299,8 @@ def main():
     
     if not common_ids:
         print("No common scenario IDs found. Exiting.")
-        return
+        # Exit with an error so a script or CI run notices that nothing was analyzed
+        raise SystemExit(1)
     
     # Analyze common scenarios
     reasoning_data, detailed_analysis = analyze_common_scenarios(common_ids, max_scenarios=5)

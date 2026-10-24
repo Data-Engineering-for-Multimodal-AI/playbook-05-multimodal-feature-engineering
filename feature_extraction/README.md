@@ -11,6 +11,8 @@ This directory contains tools for extracting, comparing, and analyzing features 
 
 ## Usage
 
+The scripts listed here live in the repository root. The `.py` files in this folder are thin wrappers that run the root copy, so you can run either path from the repository root.
+
 ```bash
 # Extract and compare scenario IDs
 python extract_validation_ids.py

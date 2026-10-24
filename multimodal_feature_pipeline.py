@@ -8,16 +8,19 @@ from tqdm import tqdm
 from collections import defaultdict
 from sentence_transformers import SentenceTransformer
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report
+from sklearn.model_selection import GroupShuffleSplit
+from sklearn.metrics import accuracy_score, balanced_accuracy_score, classification_report, f1_score
 from sklearn.preprocessing import StandardScaler
 import umap
 import seaborn as sns
 from typing import Dict, List, Tuple, Any, Optional, Union
 
+# Folder with the Waymo data (see data/README.md). Set WAYMO_DATA_DIR to use another folder.
+DATA_DIR = os.environ.get('WAYMO_DATA_DIR', 'data')
+
 # Path definitions
-MOTION_VALIDATION_PATH = 'data/motion/tf_example/validation_interactive'
-REASONING_VALIDATION_PATH = 'data/reasoning/validation_interactive'
+MOTION_VALIDATION_PATH = os.path.join(DATA_DIR, 'motion/tf_example/validation_interactive')
+REASONING_VALIDATION_PATH = os.path.join(DATA_DIR, 'reasoning/validation_interactive')
 OUTPUT_DIR = 'outputs/multimodal_features'
 FEATURE_STORE_DIR = 'outputs/feature_store'
 
@@ -60,6 +63,7 @@ class MultimodalFeaturePipeline:
         self.reasoning_features = {}
         self.text_embeddings = {}
         self.fused_features = {}
+        self.motion_cache = {}
     
     def load_common_scenario_ids(self):
         """Load the list of common scenario IDs between motion and reasoning datasets."""
@@ -69,7 +73,7 @@ class MultimodalFeaturePipeline:
             try:
                 with open(comparison_file, 'r') as f:
                     comparison = json.load(f)
-                common_ids = comparison.get('common_ids', [])
+                common_ids = sorted(comparison.get('common_ids', []))
                 print(f"Loaded {len(common_ids)} common scenario IDs.")
                 return common_ids
             except Exception as e:
@@ -80,7 +84,8 @@ class MultimodalFeaturePipeline:
         motion_ids = self.extract_motion_scenario_ids()
         reasoning_ids = self.extract_reasoning_scenario_ids()
         
-        common_ids = list(set(motion_ids).intersection(set(reasoning_ids)))
+        # Sorted so that "the first N scenarios" is the same on every run
+        common_ids = sorted(set(motion_ids).intersection(set(reasoning_ids)))
         print(f"Found {len(common_ids)} common scenario IDs.")
         
         # Save to file for later use
@@ -167,12 +172,25 @@ class MultimodalFeaturePipeline:
     
     def extract_motion_features(self, scenario_id):
         """Extract rich motion features from TFRecord data for a specific scenario."""
-        print(f"Extracting motion features for scenario {scenario_id}...")
+        if scenario_id not in self.motion_cache:
+            self.prefetch_motion_features([scenario_id])
+        return self.motion_cache.get(scenario_id)
+    
+    def prefetch_motion_features(self, scenario_ids):
+        """Extract motion features for many scenarios in one pass over the motion files.
         
-        tfrecord_files = [os.path.join(self.motion_path, f) for f in os.listdir(self.motion_path) 
-                         if '.tfrecord' in f]
+        Looking each scenario up separately re-reads the TFRecords once per scenario,
+        which takes hours with more than a few shards.
+        """
+        wanted = set(scenario_ids) - set(self.motion_cache)
+        print(f"Extracting motion features for {len(wanted)} scenarios...")
+        
+        tfrecord_files = sorted(os.path.join(self.motion_path, f) for f in os.listdir(self.motion_path) 
+                                if '.tfrecord' in f)
         
         for tfrecord_file in tfrecord_files:
+            if not wanted:
+                break
             raw_dataset = tf.data.TFRecordDataset(tfrecord_file)
             
             for i, raw_record in enumerate(tqdm(raw_dataset, desc=f"Searching in {os.path.basename(tfrecord_file)}")):
@@ -182,117 +200,127 @@ class MultimodalFeaturePipeline:
                     
                     record_scenario_id = example.features.feature['scenario/id'].bytes_list.value[0].decode('utf-8')
                     
-                    if record_scenario_id == scenario_id:
-                        print(f"Found scenario {scenario_id} in {os.path.basename(tfrecord_file)}")
-                        
-                        # Extract features
-                        features = {}
-                        features['scenario_id'] = scenario_id
-                        
-                        # Helper function to extract feature arrays
-                        def extract_feature(name, default=None):
-                            if name not in example.features.feature:
-                                return default
-                                
-                            feature = example.features.feature[name]
-                            
-                            # Int features
-                            if feature.int64_list.value:
-                                return np.array(feature.int64_list.value)
-                            
-                            # Float features
-                            if feature.float_list.value:
-                                return np.array(feature.float_list.value)
-                                
-                            # Bytes features
-                            if feature.bytes_list.value:
-                                return [v.decode('utf-8') for v in feature.bytes_list.value]
-                                
-                            return default
-                        
-                        # Basic scenario features
-                        features['agent_ids'] = extract_feature('state/id')
-                        features['agent_types'] = extract_feature('state/type')
-                        features['is_sdc'] = extract_feature('state/is_sdc')
-                        
-                        # Current state features
-                        features['current_x'] = extract_feature('state/current/x')
-                        features['current_y'] = extract_feature('state/current/y')
-                        features['current_velocity_x'] = extract_feature('state/current/velocity_x')
-                        features['current_velocity_y'] = extract_feature('state/current/velocity_y')
-                        features['current_speed'] = extract_feature('state/current/speed')
-                        features['current_bbox_yaw'] = extract_feature('state/current/bbox_yaw')
-                        features['current_valid'] = extract_feature('state/current/valid')
-                        
-                        # Try to extract trajectory features if available
-                        features['future_x'] = extract_feature('state/future/x')
-                        features['future_y'] = extract_feature('state/future/y')
-                        features['future_velocity_x'] = extract_feature('state/future/velocity_x')
-                        features['future_velocity_y'] = extract_feature('state/future/velocity_y')
-                        features['future_speed'] = extract_feature('state/future/speed')
-                        features['future_valid'] = extract_feature('state/future/valid')
-                        
-                        # Calculate per-agent features
-                        num_agents = len(features['agent_ids'])
-                        agent_features = []
-                        
-                        for agent_idx in range(num_agents):
-                            if not features['current_valid'][agent_idx]:
-                                continue
-                                
-                            agent_id = int(features['agent_ids'][agent_idx])
-                            
-                            agent_data = {
-                                'scenario_id': scenario_id,
-                                'agent_id': agent_id,
-                                'agent_type': int(features['agent_types'][agent_idx]) if 'agent_types' in features else None,
-                                'is_sdc': bool(features['is_sdc'][agent_idx]) if 'is_sdc' in features else False,
-                                'current_x': float(features['current_x'][agent_idx]),
-                                'current_y': float(features['current_y'][agent_idx]),
-                                'current_speed': float(features['current_speed'][agent_idx]),
-                                'current_heading': float(features['current_bbox_yaw'][agent_idx]) if 'current_bbox_yaw' in features else None,
-                            }
-                            
-                            # Add future trajectory if available
-                            if 'future_speed' in features and features['future_speed'] is not None:
-                                # Check if we can reshape the array properly
-                                if isinstance(features['future_speed'], np.ndarray):
-                                    try:
-                                        # Calculate average future speed and heading change
-                                        future_speeds = features['future_speed'].reshape(-1, num_agents)[:, agent_idx]
-                                        agent_data['avg_future_speed'] = float(np.mean(future_speeds[features['future_valid'].reshape(-1, num_agents)[:, agent_idx]]))
-                                        
-                                        # Check if agent is yielding (significant speed reduction)
-                                        agent_data['is_yielding'] = self.is_yielding(future_speeds)
-                                    except (ValueError, IndexError) as e:
-                                        # If reshaping fails, skip these features
-                                        print(f"Error processing future data for agent {agent_id}: {str(e)}")
-                            
-                            # Calculate distance to ego if this is not the ego
-                            if not agent_data['is_sdc']:
-                                ego_idx = np.where(features['is_sdc'] == 1)[0]
-                                if len(ego_idx) > 0:
-                                    ego_idx = ego_idx[0]
-                                    ego_x = features['current_x'][ego_idx]
-                                    ego_y = features['current_y'][ego_idx]
-                                    agent_data['distance_to_ego'] = self.compute_distance(
-                                        agent_data['current_x'], 
-                                        agent_data['current_y'], 
-                                        ego_x, 
-                                        ego_y
-                                    )
-                            
-                            agent_features.append(agent_data)
-                        
-                        return agent_features
+                    if record_scenario_id in wanted:
+                        self.motion_cache[record_scenario_id] = self.agent_features_from_example(example, record_scenario_id)
+                        wanted.discard(record_scenario_id)
+                        if not wanted:
+                            break
                         
                 except Exception as e:
                     if i % 100 == 0:  # Only print occasional errors to avoid spam
                         print(f"Error processing motion record: {str(e)}")
                     continue
         
-        print(f"No features found for scenario {scenario_id} in motion data.")
-        return None
+        for scenario_id in wanted:
+            print(f"No features found for scenario {scenario_id} in motion data.")
+            self.motion_cache[scenario_id] = None
+    
+    def agent_features_from_example(self, example, scenario_id):
+        """Per-agent features from one WOMD tf.Example."""
+        # Extract features
+        features = {}
+        features['scenario_id'] = scenario_id
+
+        # Helper function to extract feature arrays
+        def extract_feature(name, default=None):
+            if name not in example.features.feature:
+                return default
+
+            feature = example.features.feature[name]
+
+            # Int features
+            if feature.int64_list.value:
+                return np.array(feature.int64_list.value)
+
+            # Float features
+            if feature.float_list.value:
+                return np.array(feature.float_list.value)
+
+            # Bytes features
+            if feature.bytes_list.value:
+                return [v.decode('utf-8') for v in feature.bytes_list.value]
+
+            return default
+
+        # Basic scenario features
+        features['agent_ids'] = extract_feature('state/id')
+        features['agent_types'] = extract_feature('state/type')
+        features['is_sdc'] = extract_feature('state/is_sdc')
+
+        # Current state features
+        features['current_x'] = extract_feature('state/current/x')
+        features['current_y'] = extract_feature('state/current/y')
+        features['current_velocity_x'] = extract_feature('state/current/velocity_x')
+        features['current_velocity_y'] = extract_feature('state/current/velocity_y')
+        features['current_speed'] = extract_feature('state/current/speed')
+        features['current_bbox_yaw'] = extract_feature('state/current/bbox_yaw')
+        features['current_valid'] = extract_feature('state/current/valid')
+
+        # Try to extract trajectory features if available
+        features['future_x'] = extract_feature('state/future/x')
+        features['future_y'] = extract_feature('state/future/y')
+        features['future_velocity_x'] = extract_feature('state/future/velocity_x')
+        features['future_velocity_y'] = extract_feature('state/future/velocity_y')
+        features['future_speed'] = extract_feature('state/future/speed')
+        features['future_valid'] = extract_feature('state/future/valid')
+
+        # Calculate per-agent features
+        num_agents = len(features['agent_ids'])
+        agent_features = []
+
+        for agent_idx in range(num_agents):
+            if not features['current_valid'][agent_idx]:
+                continue
+
+            agent_id = int(features['agent_ids'][agent_idx])
+
+            agent_data = {
+                'scenario_id': scenario_id,
+                'agent_id': agent_id,
+                'agent_type': int(features['agent_types'][agent_idx]) if 'agent_types' in features else None,
+                'is_sdc': bool(features['is_sdc'][agent_idx]) if 'is_sdc' in features else False,
+                'current_x': float(features['current_x'][agent_idx]),
+                'current_y': float(features['current_y'][agent_idx]),
+                'current_speed': float(features['current_speed'][agent_idx]),
+                'current_heading': float(features['current_bbox_yaw'][agent_idx]) if 'current_bbox_yaw' in features else None,
+            }
+
+            # Add future trajectory if available
+            if 'future_speed' in features and features['future_speed'] is not None:
+                # Check if we can reshape the array properly
+                if isinstance(features['future_speed'], np.ndarray):
+                    try:
+                        # Future tensors are agent-major: shape [num_agents, 80 future steps].
+                        # Keep only this agent's valid future steps.
+                        future_speeds = features['future_speed'].reshape(num_agents, -1)[agent_idx]
+                        future_valid = features['future_valid'].reshape(num_agents, -1)[agent_idx].astype(bool)
+                        future_speeds = future_speeds[future_valid]
+                        if len(future_speeds) > 0:
+                            agent_data['avg_future_speed'] = float(np.mean(future_speeds))
+
+                            # Check if agent is yielding (significant speed reduction)
+                            agent_data['is_yielding'] = self.is_yielding(future_speeds)
+                    except (ValueError, IndexError) as e:
+                        # If reshaping fails, skip these features
+                        print(f"Error processing future data for agent {agent_id}: {str(e)}")
+
+            # Calculate distance to ego if this is not the ego
+            if not agent_data['is_sdc']:
+                ego_idx = np.where(features['is_sdc'] == 1)[0]
+                if len(ego_idx) > 0:
+                    ego_idx = ego_idx[0]
+                    ego_x = features['current_x'][ego_idx]
+                    ego_y = features['current_y'][ego_idx]
+                    agent_data['distance_to_ego'] = self.compute_distance(
+                        agent_data['current_x'], 
+                        agent_data['current_y'], 
+                        ego_x, 
+                        ego_y
+                    )
+
+            agent_features.append(agent_data)
+
+        return agent_features
     
     def extract_reasoning_features(self, scenario_id):
         """Extract reasoning features and Q&A text from reasoning data for a specific scenario."""
@@ -388,7 +416,11 @@ class MultimodalFeaturePipeline:
         if self.text_model is None or not reasoning_features or 'qa_texts' not in reasoning_features:
             return None
             
-        qa_texts = reasoning_features['qa_texts']
+        # Embed only the Q&As that describe the scene at the current moment (map, ego and
+        # surrounding-agent status). The interaction Q&As describe what agents *will* do over
+        # the next few seconds, which is what the yield label measures, so using them as
+        # model inputs would leak the answer.
+        qa_texts = [t for t in reasoning_features['qa_texts'] if not t.startswith("Interaction:")]
         if not qa_texts:
             return None
             
@@ -426,7 +458,7 @@ class MultimodalFeaturePipeline:
         min_future_speed = np.min(future_speeds) if len(future_speeds) > 0 else 0
         
         # Agent is yielding if it slows down significantly
-        return current_speed > threshold and min_future_speed < threshold
+        return bool(current_speed > threshold and min_future_speed < threshold)
     
     def fuse_features(self, motion_agent_features, reasoning_features, text_embedding):
         """Fuse motion and reasoning features with text embeddings."""
@@ -474,9 +506,9 @@ class MultimodalFeaturePipeline:
                 # Add distance to ego if not ego
                 'distance_to_ego': agent_feature.get('distance_to_ego', 0.0) if not agent_feature['is_sdc'] else 0.0,
                 
-                # Future behavior if available
+                # Future behavior if available (the label; None when the agent has no valid future steps)
                 'avg_future_speed': agent_feature.get('avg_future_speed', None),
-                'is_yielding': agent_feature.get('is_yielding', False),
+                'is_yielding': agent_feature.get('is_yielding', None),
                 
                 # Reasoning metadata
                 'cur_time': reasoning_features.get('cur_time'),
@@ -550,6 +582,7 @@ class MultimodalFeaturePipeline:
         scenarios_to_process = self.common_scenario_ids[:max_scenarios] if max_scenarios else self.common_scenario_ids
         
         print(f"Will process {len(scenarios_to_process)} scenarios.")
+        self.prefetch_motion_features(scenarios_to_process)
         
         successful = 0
         for i, scenario_id in enumerate(scenarios_to_process):
@@ -640,7 +673,13 @@ class MultimodalFeaturePipeline:
         print("Feature store metadata saved.")
     
     def train_yield_prediction_model(self):
-        """Train a simple yield prediction model using the fused features."""
+        """Train a simple yield prediction model using the fused features.
+        
+        Every agent in a scenario shares that scenario's text embedding and question
+        counts, so the train/test split is by scenario: no scenario is on both sides.
+        The model is compared with a majority-class baseline and with the same model
+        on motion features alone, so you can see what the reasoning features add.
+        """
         if not hasattr(self, 'fused_df') or self.fused_df.empty:
             print("No fused features available for model training.")
             return None
@@ -651,86 +690,115 @@ class MultimodalFeaturePipeline:
         df = self.fused_df.copy()
         
         # Filter for agents that have future trajectory information
-        df = df.dropna(subset=['avg_future_speed', 'is_yielding'])
+        df = df.dropna(subset=['avg_future_speed', 'is_yielding']).reset_index(drop=True)
         
         if len(df) == 0:
             print("No samples with valid future trajectory information.")
             return None
-            
-        print(f"Using {len(df)} samples for yield prediction model.")
         
-        # Select features for the model
-        feature_cols = ['speed', 'distance_to_ego']
+        y = df['is_yielding'].astype(bool)
+        groups = df['scenario_id']
+        print(f"Using {len(df)} agents from {groups.nunique()} scenarios for yield prediction model.")
+        print(f"Yielding agents: {int(y.sum())} ({y.mean():.1%})")
         
-        # Add reasoning question counts
-        feature_cols.extend(['env_question_count', 'ego_question_count', 
-                           'sur_question_count', 'int_question_count'])
+        if groups.nunique() < 2 or y.nunique() < 2:
+            print("Need at least 2 scenarios and both classes. Process more scenarios with --max-scenarios.")
+            return None
+        
+        # Select features for the model: only what is known at the current moment
+        motion_cols = ['speed', 'distance_to_ego']
+        
+        # Add reasoning question counts. int_question_count is left out: the interaction
+        # Q&As are written about what happens next, which is what the label measures.
+        reasoning_cols = ['env_question_count', 'ego_question_count', 'sur_question_count']
         
         # Add text embedding features if available
-        if 'text_embedding_dim' in df.columns:
-            embedding_dim = df['text_embedding_dim'].iloc[0]
-            embedding_cols = [f'text_embedding_{i}' for i in range(int(embedding_dim))]
-            filtered_embedding_cols = [col for col in embedding_cols if col in df.columns]
-            
-            if filtered_embedding_cols:
-                print(f"Adding {len(filtered_embedding_cols)} text embedding dimensions to model features.")
-                feature_cols.extend(filtered_embedding_cols)
+        embedding_cols = []
+        if 'text_embedding_dim' in df.columns and df['text_embedding_dim'].notna().any():
+            embedding_dim = int(df['text_embedding_dim'].dropna().iloc[0])
+            embedding_cols = [f'text_embedding_{i}' for i in range(embedding_dim) if f'text_embedding_{i}' in df.columns]
+            print(f"Adding {len(embedding_cols)} text embedding dimensions to model features.")
         
-        # Prepare features and target
-        X = df[feature_cols].fillna(0)
-        y = df['is_yielding']
+        feature_cols = motion_cols + reasoning_cols + embedding_cols
         
-        # Split into train and test sets
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+        # Split into train and test sets by scenario
+        splitter = GroupShuffleSplit(n_splits=1, test_size=0.3, random_state=42)
+        train_idx, test_idx = next(splitter.split(df, y, groups))
+        y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+        print(f"Train: {len(train_idx)} agents from {groups.iloc[train_idx].nunique()} scenarios. "
+              f"Test: {len(test_idx)} agents from {groups.iloc[test_idx].nunique()} scenarios.")
         
-        # Scale features
-        scaler = StandardScaler()
-        X_train_scaled = scaler.fit_transform(X_train)
-        X_test_scaled = scaler.transform(X_test)
+        if y_train.nunique() < 2:
+            print("The training scenarios contain only one class. Process more scenarios with --max-scenarios.")
+            return None
+        if y_test.nunique() < 2:
+            print("WARNING: the test scenarios contain only one class, so the scores below don't measure "
+                  "anything. Process more scenarios (the default, --max-scenarios 0, uses all of them).")
         
-        # Train logistic regression model
-        model = LogisticRegression(max_iter=1000, class_weight='balanced')
-        model.fit(X_train_scaled, y_train)
+        def fit(cols):
+            # Scale features, then train a logistic regression model
+            scaler = StandardScaler()
+            X_train_scaled = scaler.fit_transform(df.loc[train_idx, cols].fillna(0))
+            X_test_scaled = scaler.transform(df.loc[test_idx, cols].fillna(0))
+            model = LogisticRegression(max_iter=1000, class_weight='balanced')
+            model.fit(X_train_scaled, y_train)
+            return model, model.score(X_train_scaled, y_train), model.predict(X_test_scaled)
         
-        # Evaluate model
-        train_score = model.score(X_train_scaled, y_train)
-        test_score = model.score(X_test_scaled, y_test)
+        def scores(y_pred):
+            return {
+                'accuracy': float(accuracy_score(y_test, y_pred)),
+                'balanced_accuracy': float(balanced_accuracy_score(y_test, y_pred)),
+                'f1_yielding': float(f1_score(y_test, y_pred, zero_division=0)),
+            }
+        
+        majority_class = bool(y_train.mode()[0])
+        _, _, motion_pred = fit(motion_cols)
+        model, train_score, y_pred = fit(feature_cols)
+        
+        comparison = {
+            'majority_class_baseline': scores(np.full(len(y_test), majority_class)),
+            'motion_only': scores(motion_pred),
+            'motion_plus_reasoning': scores(y_pred),
+        }
+        test_score = comparison['motion_plus_reasoning']['accuracy']
         
         print(f"Model training complete.")
         print(f"Train accuracy: {train_score:.4f}")
         print(f"Test accuracy: {test_score:.4f}")
+        print("\nTest set comparison:")
+        print(f"{'model':<26}{'accuracy':>10}{'balanced acc':>14}{'F1 (yielding)':>15}")
+        for name, s in comparison.items():
+            print(f"{name:<26}{s['accuracy']:>10.3f}{s['balanced_accuracy']:>14.3f}{s['f1_yielding']:>15.3f}")
         
         # Detailed classification report
-        y_pred = model.predict(X_test_scaled)
-        report = classification_report(y_test, y_pred)
-        print("\nClassification Report:")
+        report = classification_report(y_test, y_pred, labels=[False, True], zero_division=0)
+        print("\nClassification Report (motion + reasoning):")
         print(report)
         
         # Save model results
         results = {
-            'train_accuracy': train_score,
-            'test_accuracy': test_score,
-            'feature_importance': dict(zip(feature_cols, model.coef_[0])),
+            'agents': len(df),
+            'scenarios': int(groups.nunique()),
+            'yielding_share': float(y.mean()),
+            'train_agents': len(train_idx),
+            'test_agents': len(test_idx),
+            'train_accuracy': float(train_score),
+            'test_accuracy': float(test_score),
+            'test_comparison': comparison,
+            'feature_importance': {k: float(v) for k, v in zip(feature_cols, model.coef_[0])},
             'classification_report': report
         }
         
         # Save model results to file
         with open(os.path.join(self.output_dir, 'yield_model_results.json'), 'w') as f:
-            # Convert numpy values to Python native types
-            results_serializable = {
-                'train_accuracy': float(train_score),
-                'test_accuracy': float(test_score),
-                'feature_importance': {k: float(v) for k, v in results['feature_importance'].items()},
-                'classification_report': report
-            }
-            json.dump(results_serializable, f, indent=2)
+            json.dump(results, f, indent=2)
         
         # Visualize feature importance
         self.visualize_feature_importance(feature_cols, model.coef_[0])
         
         # If text embeddings are present, visualize them
-        if filtered_embedding_cols and len(filtered_embedding_cols) > 10:
-            self.visualize_text_embeddings(df, filtered_embedding_cols, y)
+        if len(embedding_cols) > 10:
+            self.visualize_text_embeddings(df, embedding_cols, y)
         
         return model, results
     
@@ -805,7 +873,7 @@ class MultimodalFeaturePipeline:
         except Exception as e:
             print(f"Error creating text embedding visualization: {str(e)}")
 
-def main(max_scenarios=10):
+def main(max_scenarios=None):
     """Main function to run the multimodal feature pipeline."""
     print("Starting Multimodal Feature Pipeline")
     
@@ -825,5 +893,13 @@ def main(max_scenarios=10):
     print("Pipeline complete!")
 
 if __name__ == "__main__":
-    # Process 10 scenarios by default
-    main(max_scenarios=10) 
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__)
+    # Every scenario found in both datasets by default (the first edition used 10, which
+    # leaves too few yielding agents to test on). Use e.g. --max-scenarios 10 for a quick run.
+    parser.add_argument("--max-scenarios", "--max_scenarios", type=int, default=0,
+                        help="number of scenarios to process; 0 (default) means all")
+    # Accepted for the command in multimodal_pipeline/README.md; the model is always trained
+    parser.add_argument("--train_yield_model", "--train-yield-model", action="store_true", help=argparse.SUPPRESS)
+    args = parser.parse_args()
+    main(max_scenarios=args.max_scenarios or None)

@@ -1,5 +1,11 @@
 # Google Cloud Implementation for Waymo Multimodal Feature Pipeline
 
+> **Untested sketch.** The code in this folder shows how the local pipeline could map onto Google Cloud (Dataflow, Vertex AI). It has not been run or tested in the 2026 update, its dependencies (`apache-beam`, `google-cloud-aiplatform`, `xgboost`) are not in `requirements.txt`, and CI does not cover it. The local pipeline in the repository root is the supported path and needs no cloud account.
+>
+> `feature_store_setup.py` and `multimodal_feature_pipeline_gcp.py` use the Vertex AI Feature Store (Legacy) API (`aiplatform.Featurestore`, `EntityType`). Google deprecated it on February 17, 2026 and will shut it down on February 17, 2027 ([Vertex AI deprecations](https://docs.cloud.google.com/vertex-ai/docs/deprecations)).
+>
+> `train_vertex_ai.py` splits rows into train and test sets at random. If you adapt it, split by scenario as the local `multimodal_feature_pipeline.py` now does (see the main README).
+
 This directory contains the implementation components for deploying the Waymo multimodal feature pipeline on Google Cloud Platform (GCP). The implementation leverages GCP services such as Dataflow, Vertex AI Feature Store, and other managed services to process Waymo datasets at scale.
 
 ## Components
@@ -19,7 +25,7 @@ This implementation includes the following components:
 ### Prerequisites
 
 - Google Cloud SDK installed and configured
-- Python 3.8 or higher
+- Python 3.12 or higher
 - Access to Google Cloud Platform with appropriate permissions
 - Access to Waymo datasets stored in Google Cloud Storage
 
