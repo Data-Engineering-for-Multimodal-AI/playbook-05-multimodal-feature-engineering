@@ -1,6 +1,6 @@
 # Multimodal Feature Engineering on Waymo Motion and Reasoning Data
 
-**Chapter 5 playbook** from *Data Engineering for Multimodal AI* (O'Reilly, 2026), pp. 164–172.
+**Chapter 5 playbook** from *Data Engineering for Multimodal AI* (O'Reilly, 2026), pages 166–173 (Early Release page numbers; they may differ in the final print).
 Book: https://oreil.ly/data-engineering-multimodal
 
 > Want the code exactly as printed? Use the `first-edition` tag. This branch is the 2026 maintenance update; see [Differences from the printed book](#differences-from-the-printed-book). The printed yield model's near-perfect scores came from bugs, which are explained there.
@@ -34,7 +34,7 @@ gcloud auth login                 # the Google account you registered at waymo.c
 bash scripts/fetch_data.sh        # about 7 GB into ./data (or $WAYMO_DATA_DIR)
 ```
 
-Then, as printed in the book (Python 3.12 or newer):
+Then (Python 3.12 or newer; the book, page 168, runs `multimodal_feature_pipeline.py`):
 
 ```bash
 pip install -r requirements.txt
@@ -52,7 +52,7 @@ Using [uv](https://docs.astral.sh/uv/) instead: `uv sync`, then prefix each comm
 
 Run the end-to-end check, which uses synthetic data in the Waymo formats and needs no Waymo account: `make smoke` (the first run downloads the public Sentence-BERT models, about 0.5 GB)
 
-The subfolder paths from the book (`python multimodal_pipeline/multimodal_feature_pipeline.py` and so on) still work. They run the root scripts.
+The first edition's subfolder paths (`python multimodal_pipeline/multimodal_feature_pipeline.py` and so on) still work. They run the root scripts.
 
 ## Tested on
 
@@ -65,14 +65,14 @@ Data: WOMD v1.3.1 `tf_example`, validation_interactive shards 00000–00009 and 
 
 ## Differences from the printed book
 
-Page references are to be confirmed against the printed book.
+The "First edition" column is the code at the `first-edition` tag, which the book describes.
 
-| What | Printed version | Now | Why |
+| What | First edition | Now | Why |
 |---|---|---|---|
-| Yield labels | Read the future speed array as `[80, agents]` | Read as `[agents, 80]`, the WOMD layout | Each label mixed several agents' speeds. In three runs of the printed command, 72–92% of test agents were labeled yielding. With correct labels, 3.7% are |
+| Yield labels | Read the future speed array as `[80, agents]` | Read as `[agents, 80]`, the WOMD layout | Each label mixed several agents' speeds. In three runs of the first-edition command, 72–92% of test agents were labeled yielding. With correct labels, 3.7% are |
 | Text features | Embedding included the interaction Q&As (`int_a`, e.g. "surrounding agent #0 will yield to the ego agent"); `int_question_count` was an input | Only `env`, `ego` and `sur` Q&As; no `int_question_count` | The interaction answers describe the future that the label measures |
 | Train/test split | Random split of agent rows | Split by scenario | Agents in one scenario share its text features |
-| Reported result | Near-perfect accuracy (94–99% test accuracy in our three runs of the printed code) | Compared with baselines; see [Expected output](#expected-output) | With correct labels and no leakage, the model does not beat the motion-only model |
+| Reported result | Near-perfect accuracy (the book, pages 169–170: 100%; 94–99% test accuracy in our three runs of the first-edition code) | Compared with baselines; see [Expected output](#expected-output) | With correct labels and no leakage, the model does not beat the motion-only model |
 | `waymo_feature_pipeline.py` | Trajectories replaced by made-up values when an array lookup failed (it always did) | All trajectory arrays read per agent; features from past and current only; scenario split | Its labels and statistics came from the made-up values |
 | Data in the repository | 126,357 WOMD-Reasoning files committed | Downloaded by each reader with `scripts/fetch_data.sh` | Waymo's terms allow sharing only with registered users |
 | Run order | `analyze_common_scenarios.py` straight after `validation_data_analysis.py` | Run `extract_validation_ids.py` first | `analyze_common_scenarios.py` reads its output |
@@ -97,7 +97,7 @@ Don't commit the Waymo data or share it with people who haven't registered. `dat
 
 ## Expected output
 
-From my run on 2026-10-22: macOS 26.5.1 (arm64), Python 3.12.15, a fresh clone installed with `pip install -r requirements.txt` (67 s), and the default download from `scripts/fetch_data.sh`. Python 3.13.16 gave the same numbers. Progress bars and library warnings are left out.
+From my run on 2026-10-22: macOS 26.5.1 (arm64), Python 3.12.15, a fresh clone installed with `pip install -r requirements.txt` (67 s), and the default download from `scripts/fetch_data.sh`. Python 3.13.16 gave the same numbers. Progress bars and library warnings are left out. This is the output of this version; it may differ from the output printed in the book, and that's okay.
 
 `python extract_validation_ids.py` (14 s):
 

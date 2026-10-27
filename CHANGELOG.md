@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026.10.1 (2026-10-27)
+
+### Changed
+- README, after checking against the book (Early Release, pages 166–173): page numbers; the
+  differences table's left column is the first edition.
+
 ## 2026.10 (2026-10-22): 2026 maintenance update
 
 The printed version is tagged `first-edition`. That tag points to the printed code with the Waymo data removed from the repository history (see "Removed").
