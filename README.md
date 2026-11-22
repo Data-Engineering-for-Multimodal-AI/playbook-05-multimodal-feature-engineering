@@ -239,7 +239,7 @@ This playbook runs on 776 scenarios and a linear model. Before you build somethi
 | Where you run it | Cost |
 |---|---|
 | Your machine | $0. Everything runs locally: no API keys, no paid services. The Waymo data is free with a registration. About 9.5 GB of disk: 2.4 GB for the Python environment, 420 MB for the model, 6.5 GB for the Waymo data and up to 520 MB for the experiments' cache. |
-| A GitHub Codespace (2 cores, 8 GB, the default size; the repo asks for nothing larger) | Estimated $0.18 per hour at GitHub's list price (November 2026). A free personal account includes 120 core-hours a month, about 60 hours on this machine. |
+| A GitHub Codespace (2 cores, 8 GB, the default size; the repo asks for nothing larger) | Estimated $0.18 per hour at GitHub's list price (November 2026). A free personal account includes 120 core-hours a month, about 60 hours on this machine. In CI, `make run` on synthetic data took 84 s in a freshly built devcontainer, including the model download. |
 
 `gcp_implementation/` sketches a Google Cloud version; it is untested, and this README doesn't estimate its cost.
 
