@@ -1,5 +1,8 @@
 .PHONY: setup run run-real run-synthetic smoke data clean
 
+# A bare `make` runs the smoke test, as it did before the uniform targets were added.
+.DEFAULT_GOAL := smoke
+
 # Uniform targets for The Playbooks. The book's commands (gcloud auth login,
 # bash scripts/fetch_data.sh, pip install -r requirements.txt, then the scripts in the README's
 # Quick start, ending with python multimodal_feature_pipeline.py) still work as printed.
