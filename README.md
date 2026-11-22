@@ -1,6 +1,6 @@
 # Multimodal Feature Engineering on Waymo Motion and Reasoning Data
 
-**Chapter 5 playbook** from *Data Engineering for Multimodal AI* (O'Reilly, 2026), pages 166–173 (Early Release page numbers; they may differ in the final print).
+**Chapter 5 playbook** from *Data Engineering for Multimodal AI* (O'Reilly, 2026), pages 164–171.
 Book: https://oreil.ly/data-engineering-multimodal
 
 > Want the code exactly as printed? Use the `first-edition` tag. This branch is the 2026 maintenance update; see [Differences from the printed book](#differences-from-the-printed-book). The printed yield model's near-perfect scores came from bugs, which are explained there.
@@ -34,7 +34,7 @@ gcloud auth login                 # the Google account you registered at waymo.c
 bash scripts/fetch_data.sh        # about 7 GB into ./data (or $WAYMO_DATA_DIR)
 ```
 
-Then (Python 3.12 or newer; the book, page 168, runs `multimodal_feature_pipeline.py`):
+Then (Python 3.12 or newer; the book, page 167, runs `multimodal_feature_pipeline.py`):
 
 ```bash
 pip install -r requirements.txt
@@ -72,7 +72,7 @@ The "First edition" column is the code at the `first-edition` tag, which the boo
 | Yield labels | Read the future speed array as `[80, agents]` | Read as `[agents, 80]`, the WOMD layout | Each label mixed several agents' speeds. In three runs of the first-edition command, 72–92% of test agents were labeled yielding. With correct labels, 3.7% are |
 | Text features | Embedding included the interaction Q&As (`int_a`, e.g. "surrounding agent #0 will yield to the ego agent"); `int_question_count` was an input | Only `env`, `ego` and `sur` Q&As; no `int_question_count` | The interaction answers describe the future that the label measures |
 | Train/test split | Random split of agent rows | Split by scenario | Agents in one scenario share its text features |
-| Reported result | Near-perfect accuracy (the book, pages 169–170: 100%; 94–99% test accuracy in our three runs of the first-edition code) | Compared with baselines; see [Expected output](#expected-output) | With correct labels and no leakage, the model does not beat the motion-only model |
+| Reported result | Near-perfect accuracy (the book, pages 167 and 169: 100%; 94–99% test accuracy in our three runs of the first-edition code) | Compared with baselines; see [Expected output](#expected-output) | With correct labels and no leakage, the model does not beat the motion-only model |
 | `waymo_feature_pipeline.py` | Trajectories replaced by made-up values when an array lookup failed (it always did) | All trajectory arrays read per agent; features from past and current only; scenario split | Its labels and statistics came from the made-up values |
 | Data in the repository | 126,357 WOMD-Reasoning files committed | Downloaded by each reader with `scripts/fetch_data.sh` | Waymo's terms allow sharing only with registered users |
 | Run order | `analyze_common_scenarios.py` straight after `validation_data_analysis.py` | Run `extract_validation_ids.py` first | `analyze_common_scenarios.py` reads its output |
