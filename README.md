@@ -1,7 +1,11 @@
-# Multimodal Feature Engineering on Waymo Motion and Reasoning Data
+# Playbook 05: Turn driving data and its explanations into one set of features
+**How to build a multimodal feature-engineering pipeline with the Waymo Open Dataset.** Chapter 5 of [*Data Engineering for Multimodal AI*](https://oreil.ly/data-engineering-multimodal) (O'Reilly, 2026), pages 164–171.
 
-**Chapter 5 playbook** from *Data Engineering for Multimodal AI* (O'Reilly, 2026), pages 164–171.
-Book: https://oreil.ly/data-engineering-multimodal
+A self-driving car's motion data and the text that explains its decisions come in very different forms, and a model needs them as one set of features. The chapter's running example is BayGo, a fictional autonomous vehicle company; in this repo, we use the Waymo Open Dataset. Follow along to extract features from the motion tracks and the question-and-answer annotations, fuse them, and store them in a feature store ready for a model.
+
+**The problem.** Models need numbers, but driving data comes as motion tracks and as written explanations, and the two have to become one feature set.
+
+**What you'll work with.** You'll extract features from each modality, fuse them early into one vector per example, and store the result in a feature store that a model can read from.
 
 > Want the code exactly as printed? Use the `first-edition` tag. This branch is the 2026 maintenance update; see [Differences from the printed book](#differences-from-the-printed-book). The printed yield model's near-perfect scores came from bugs, which are explained there.
 
