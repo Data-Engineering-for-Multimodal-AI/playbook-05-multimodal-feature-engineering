@@ -442,6 +442,8 @@ playbook-05-multimodal-feature-engineering/
 └── Makefile                        # make run, make smoke, make data and the targets above
 ```
 
+If this playbook helped you, a star helps other readers find it.
+
 ## License
 
 MIT. See [LICENSE](LICENSE). The Waymo data is not covered by this license; see [Data and licenses](#data-and-licenses).
