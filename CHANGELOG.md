@@ -5,6 +5,17 @@
 Nothing the book shows has changed.
 
 ### Added
+- `make show` prints one agent's feature-store entry next to the Q&As it was built from
+  (`scripts/show_agent.py`).
+- `make check-data DIR=...` and `make load DIR=...`: check a folder of scenarios in the Waymo layout
+  and run `multimodal_feature_pipeline.py` on it (`scripts/load_scenarios.py`). `make load` clears
+  `outputs/feature_store/` and the cached scenario ID list first. Tests in `tests/test_own_data.py`.
+- Three measured experiments: `make try-leakage`, `make try-split`, `make try-text-dims`
+  (`experiments/`). They use the Waymo data when it is there and synthetic data otherwise.
+- README: numbered Run it steps, time tiers, Try this, Use your own data, What you end up with,
+  Before production, What it costs.
+- CI: runs the Run it steps on synthetic data with checks on their output, the three experiments,
+  the own-data tests, and prints the time to first output in a clean devcontainer.
 - `make setup`, `make run` and `make clean`. `make run` runs `multimodal_feature_pipeline.py`. With
   the Waymo data in `data/` (or `$WAYMO_DATA_DIR`), it uses the real data. Without it, it writes
   synthetic data in the Waymo formats with `tests/make_fixture.py` into the git-ignored `synthetic/`
@@ -15,6 +26,8 @@ Nothing the book shows has changed.
   `make run` inside it.
 
 ### Changed
+- README: "What you'll build" is now "How it works"; "Quick start" is now "Run it the way the
+  book does", with its content unchanged. The first-edition note points to it.
 - README opening: a title that says what you'll do, three sentences on why, the example and what you'll do, then the data engineering problem and what you'll work with.
 - Book page numbers now match the printed book (they were Early Release page numbers).
 

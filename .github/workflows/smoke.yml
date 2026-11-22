@@ -26,8 +26,26 @@ jobs:
           key: hf-models-all-mpnet-base-v2-paraphrase-MiniLM-L6-v2
       - name: Smoke test (synthetic data in the Waymo formats)
         run: make smoke
-      - name: One-command run
-        run: make run
+      # README "Run it", steps 2 and 4 on synthetic data (CI has no Waymo data)
+      - name: Run it, steps 2 and 4
+        run: |
+          make run | tee /tmp/run.txt
+          grep -q "Processed 10 scenarios, 10 successful." /tmp/run.txt
+          grep -q "NOTE: the output above is from SYNTHETIC data" /tmp/run.txt
+          make show | tee /tmp/show.txt
+          grep -q "is_yielding            True" /tmp/show.txt
+      - name: Use your own data (file checks)
+        run: |
+          uv run --frozen pytest -q tests/test_own_data.py
+          make check-data DIR=synthetic/data | tee /tmp/check.txt
+          grep -q "All files passed the checks." /tmp/check.txt
+      # On synthetic data: checks that they run, not their numbers
+      - name: Try this 1, 2 and 3
+        run: |
+          make try-leakage | tee /tmp/t1.txt
+          grep -q "Data: SYNTHETIC data" /tmp/t1.txt
+          make try-split
+          make try-text-dims
       - name: Free disk space for the second install
         run: rm -rf .venv && uv cache clean
       - name: Printed install path (pip install -r requirements.txt)
@@ -46,4 +64,5 @@ jobs:
         uses: devcontainers/ci@v0.3
         with:
           push: never
-          runCmd: make run
+          # make run, timed from a clean devcontainer
+          runCmd: start=$(date +%s) && make run && echo "Time to first output in a clean devcontainer was $(( $(date +%s) - start )) s"
