@@ -60,3 +60,6 @@ logs/
 /outputs/feature_store/
 /common_scenario_ids.txt
 .pytest_cache/
+
+# Synthetic data and outputs from make run (not real driving data)
+/synthetic/

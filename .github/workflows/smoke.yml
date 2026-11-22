@@ -4,6 +4,8 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1"   # weekly, Monday 06:00 UTC, so breakage in upstream packages shows up
 
 jobs:
   smoke:
@@ -24,6 +26,8 @@ jobs:
           key: hf-models-all-mpnet-base-v2-paraphrase-MiniLM-L6-v2
       - name: Smoke test (synthetic data in the Waymo formats)
         run: make smoke
+      - name: One-command run
+        run: make run
       - name: Free disk space for the second install
         run: rm -rf .venv && uv cache clean
       - name: Printed install path (pip install -r requirements.txt)
@@ -32,3 +36,14 @@ jobs:
           /tmp/pipenv/bin/python -m pip install -q -r requirements.txt
           /tmp/pipenv/bin/python tests/make_fixture.py /tmp/fixture
           WAYMO_DATA_DIR=/tmp/fixture /tmp/pipenv/bin/python validation_data_analysis.py
+
+  devcontainer:
+    # Builds .devcontainer/ the way Codespaces does and runs the playbook inside it.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build the devcontainer and run the playbook
+        uses: devcontainers/ci@v0.3
+        with:
+          push: never
+          runCmd: make run

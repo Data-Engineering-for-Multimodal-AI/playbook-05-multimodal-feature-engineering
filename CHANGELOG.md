@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased (v1.1.0)
+
+Nothing the book shows has changed.
+
+### Added
+- `make setup`, `make run` and `make clean`. `make run` runs `multimodal_feature_pipeline.py`. With
+  the Waymo data in `data/` (or `$WAYMO_DATA_DIR`), it uses the real data. Without it, it writes
+  synthetic data in the Waymo formats with `tests/make_fixture.py` into the git-ignored `synthetic/`
+  folder, runs the pipeline there, and says that the output is from synthetic data and how to fetch
+  the real data. `make smoke` and `make data` are unchanged.
+- `.devcontainer/` so the repo opens in GitHub Codespaces with dependencies installed.
+- CI: a weekly scheduled run, a `make run` step, and a job that builds the devcontainer and runs
+  `make run` inside it.
+
 ## 2026.10.1 (2026-10-27)
 
 ### Changed
