@@ -335,6 +335,8 @@ No data is included in this repository. Each reader downloads their own copy; [`
 
 Don't commit the Waymo data or share it with people who haven't registered. `data/motion/` and `data/reasoning/` are in `.gitignore`.
 
+The full list, with sources, licenses and citations, is in [DATA_LICENSES.md](DATA_LICENSES.md).
+
 ## Expected output
 
 From my run on 2026-10-22: macOS 26.5.1 (arm64), Python 3.12.15, a fresh clone installed with `pip install -r requirements.txt` (67 s), and the default download from `scripts/fetch_data.sh`. Python 3.13.16 gave the same numbers. Progress bars and library warnings are left out. This is the output of this version; it may differ from the output printed in the book, and that's okay.
