@@ -486,5 +486,5 @@ This playbook was made using the Waymo Open Dataset, provided by Waymo LLC under
 
 ---
 
-[The book](https://oreil.ly/data-engineering-multimodal) · [All playbooks](https://github.com/Data-Engineering-for-Multimodal-AI#playbooks) · Previous: [Playbook 04](https://github.com/Data-Engineering-for-Multimodal-AI/playbook-04-multimodal-ingestion-pipeline) · Next: [Playbook 06](https://github.com/Data-Engineering-for-Multimodal-AI/playbook-06-multimodal-graph-rag)
+[The book](https://oreil.ly/data-engineering-multimodal) · [All playbooks](https://github.com/Data-Engineering-for-Multimodal-AI#playbooks) · Previous: [Playbook 04 bonus](https://github.com/Data-Engineering-for-Multimodal-AI/playbook-04-bonus-multimodal-vector-similarity) · Next: [Playbook 06](https://github.com/Data-Engineering-for-Multimodal-AI/playbook-06-multimodal-graph-rag)
 <!-- Substack post for this playbook: add link here -->
