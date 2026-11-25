@@ -26,6 +26,7 @@ run: setup
 	else \
 		$(MAKE) --no-print-directory run-synthetic; \
 	fi
+	@echo "playbook-05-multimodal-feature-engineering" > .playbook-done
 
 # The real data: the book's command, writing to outputs/.
 run-real:
