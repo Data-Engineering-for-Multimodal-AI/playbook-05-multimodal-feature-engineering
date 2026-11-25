@@ -1,5 +1,15 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/header-dark.png">
+  <img src="docs/img/header-light.png" alt="Playbook 05 of 12, Chapter 5 of Data Engineering for Multimodal AI: turn driving data and its explanations into one set of features. Modalities: motion tracks and text. Archetype: composable." width="100%">
+</picture>
+
 # Playbook 05: Turn driving data and its explanations into one set of features
 **How to build a multimodal feature-engineering pipeline with the Waymo Open Dataset.** Chapter 5 of [*Data Engineering for Multimodal AI*](https://oreil.ly/data-engineering-multimodal) (O'Reilly, 2026), pages 164–171.
+
+[![Tests](https://github.com/Data-Engineering-for-Multimodal-AI/playbook-05-multimodal-feature-engineering/actions/workflows/smoke.yml/badge.svg?branch=main)](https://github.com/Data-Engineering-for-Multimodal-AI/playbook-05-multimodal-feature-engineering/actions/workflows/smoke.yml)
+![Python 3.12 | 3.13](https://img.shields.io/badge/python-3.12%20%7C%203.13-1f1a19?labelColor=6b6361)
+[![License: MIT](https://img.shields.io/badge/license-MIT-1f1a19?labelColor=6b6361)](LICENSE)
+[![Open in GitHub Codespaces](https://img.shields.io/badge/Open%20in-Codespaces-b4422e?logo=github&labelColor=6b6361)](https://codespaces.new/Data-Engineering-for-Multimodal-AI/playbook-05-multimodal-feature-engineering?quickstart=1)
 
 A self-driving car's motion data and the text that explains its decisions come in very different forms, and a model needs them as one set of features. The chapter's running example is BayGo, a fictional autonomous vehicle company; in this repo, we use the Waymo Open Dataset. Follow along to extract features from the motion tracks and the question-and-answer annotations, fuse them, and store them in a feature store ready for a model.
 
@@ -245,6 +255,18 @@ This playbook runs on 776 scenarios and a linear model. Before you build somethi
 
 ## How it works
 
+```mermaid
+flowchart LR
+  A["Waymo Open Motion<br/>TFRecord tracks"] --> C["Motion features<br/>position, speed, heading"]
+  B["WOMD-Reasoning<br/>JSON Q&As"] --> D["Text embeddings<br/>Sentence-BERT, 768 dims"]
+  C --> E["Early fusion<br/>join on scenario_id"]
+  D --> E
+  E --> F["Feature store<br/>one JSON per agent"]
+  F --> G["Yield model<br/>vs. baselines"]
+  classDef key fill:#ffe8e3,stroke:#b4422e,color:#1f1a19
+  class E key
+```
+
 The pipeline aligns two modalities of the same driving scenes and fuses them into per-agent feature vectors:
 
 1. **Structured motion data**: agent trajectories (position, speed, heading; 1 s of past, the current moment, 8 s of future at 10 Hz) from the Waymo Open Motion Dataset (WOMD), stored as TFRecord files of `tf.Example` protos.
@@ -416,6 +438,14 @@ Model Performance:
 
 The other scripts ran without errors: `inspect_waymo_data.py` 75 s, `data_inspection.py` 17 s, `analyze_common_scenarios.py` 22 s, `generate_validation_report.py` 1 s, `combined_feature_pipeline.py` 23 s.
 
+## Troubleshooting
+
+**`make data` is refused access to the Waymo bucket.** The Google account you sign in with (`gcloud auth login`) must be the one you registered at [waymo.com/open](https://waymo.com/open/), and you must have accepted the dataset's terms there.
+
+**`make run` says it used synthetic data.** It looks for the Waymo files under `data/motion/tf_example/validation_interactive/` and `data/reasoning/validation_interactive/`. If they're somewhere else, run `make run WAYMO_DATA_DIR=/path/to/data`.
+
+**`make check-data` reports "truncated or not a TFRecord".** A download was cut off. Delete that file and run `make data` again.
+
 ## Project structure
 
 ```
@@ -453,3 +483,8 @@ MIT. See [LICENSE](LICENSE). The Waymo data is not covered by this license; see 
 ## Waymo Dataset Usage
 
 This playbook was made using the Waymo Open Dataset, provided by Waymo LLC under the Waymo Dataset License Agreement for Non-Commercial Use, available at waymo.com/open/terms, and your access and use of such work are governed by the terms and conditions therein.
+
+---
+
+[The book](https://oreil.ly/data-engineering-multimodal) · [All playbooks](https://github.com/Data-Engineering-for-Multimodal-AI#playbooks) · Previous: [Playbook 04](https://github.com/Data-Engineering-for-Multimodal-AI/playbook-04-multimodal-ingestion-pipeline) · Next: [Playbook 06](https://github.com/Data-Engineering-for-Multimodal-AI/playbook-06-multimodal-graph-rag)
+<!-- Substack post for this playbook: add link here -->
