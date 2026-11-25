@@ -1,6 +1,6 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/img/header-dark.png">
-  <img src="docs/img/header-light.png" alt="Playbook 05 of 12, Chapter 5 of Data Engineering for Multimodal AI: turn driving data and its explanations into one set of features. Modalities: motion tracks and text. Archetype: composable." width="100%">
+  <img src="docs/img/header-light.png" alt="Playbook 05 of 12, Chapter 5 of Data Engineering for Multimodal AI. Build: a multimodal feature-engineering pipeline. Data: motion tracks and text." width="100%">
 </picture>
 
 # Playbook 05: Turn driving data and its explanations into one set of features
@@ -357,7 +357,7 @@ No data is included in this repository. Each reader downloads their own copy; [`
 
 Don't commit the Waymo data or share it with people who haven't registered. `data/motion/` and `data/reasoning/` are in `.gitignore`.
 
-The full list, with sources, licenses and citations, is in [DATA_LICENSES.md](DATA_LICENSES.md).
+The full list, with sources, licenses and citations, is in [DATA_SOURCES.md](DATA_SOURCES.md).
 
 ## Expected output
 
