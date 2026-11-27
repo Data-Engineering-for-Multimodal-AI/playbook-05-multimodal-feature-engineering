@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased (v1.1.0)
+## v1.1.0 (2026-11-26)
 
 Nothing the book shows has changed.
 
@@ -24,12 +24,19 @@ Nothing the book shows has changed.
 - `.devcontainer/` so the repo opens in GitHub Codespaces with dependencies installed.
 - CI: a weekly scheduled run, a `make run` step, and a job that builds the devcontainer and runs
   `make run` inside it.
+- `DATA_SOURCES.md`: the datasets and models this playbook uses, with their licenses and citations.
+- `make run` writes `.playbook-done` when it passes (ignored by git). `make card` in the
+  organization's `.github` repository reads these files and draws a completion card.
 
 ### Changed
 - README: "What you'll build" is now "How it works"; "Quick start" is now "Run it the way the
   book does", with its content unchanged. The first-edition note points to it.
 - README opening: a title that says what you'll do, three sentences on why, the example and what you'll do, then the data engineering problem and what you'll work with.
 - Book page numbers now match the printed book (they were Early Release page numbers).
+- README: a header image (light and dark), badges for CI, Python, license and Codespaces, a diagram at
+  the top of "How it works", and a footer that links the book, all playbooks, and the previous and
+  next playbook.
+- README: a Troubleshooting section with three common problems and their fixes.
 
 ## 2026.10.1 (2026-10-27)
 
